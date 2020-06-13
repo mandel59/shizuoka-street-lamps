@@ -73,6 +73,9 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
         var offsetLng = 138.5;
         var offsetX = 0;
         var offsetY = 0;
+        var diffX = 0;
+        var diffY = 0;
+        var pointerDownX, pointerDownY;
         var zoomLevel = 0;
         var dragging = false;
 
@@ -99,8 +102,8 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
         function updateCircleCenterAttr() {
             circles.attr("offsetLat", offsetLat);
             circles.attr("offsetLng", offsetLng);
-            circles.attr("offsetX", offsetX);
-            circles.attr("offsetY", offsetY);
+            circles.attr("offsetX", offsetX + diffX);
+            circles.attr("offsetY", offsetY + diffY);
             circles.attr("zoomFactor", Math.pow(2, zoomLevel));
         }
         updateCircleCenterAttr();
@@ -109,22 +112,32 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
         canvas.addEventListener("pointerdown", function (ev) {
             if (ev.button === 0) {
                 dragging = true;
+                pointerDownX = ev.pageX;
+                pointerDownY = ev.pageY;
             }
         });
         document.addEventListener("pointerup", function (ev) {
             if (ev.button === 0) {
                 dragging = false;
+                offsetX += diffX;
+                offsetY += diffY;
+                diffX = 0;
+                diffY = 0;
             }
         })
         document.addEventListener("pointermove", function (ev) {
             if (!(ev.buttons & 1)) {
                 dragging = false;
+                offsetX += diffX;
+                offsetY += diffY;
+                diffX = 0;
+                diffY = 0;
                 return;
             }
             if (dragging) {
                 const invertedZoomFactor = Math.pow(0.5, zoomLevel);
-                offsetX += ev.movementX * invertedZoomFactor;
-                offsetY += ev.movementY * invertedZoomFactor;
+                diffX = (ev.pageX - pointerDownX) * invertedZoomFactor;
+                diffY = (ev.pageY - pointerDownY) * invertedZoomFactor;
                 updateCircleCenterAttr();
                 circles.render();
             }
