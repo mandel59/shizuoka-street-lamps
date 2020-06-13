@@ -54,7 +54,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
 <script>
     function loadData() {
         const DataFrame = dfjs.DataFrame;
-        const csv = location.href.replace(/index.html/, "datasets/静岡県-道路照明灯.csv");
+        const csv = location.href.replace(/\/[^/]*$/, "/datasets/静岡県-道路照明灯.csv");
         return DataFrame.fromCSV(csv)
             .then(function (df) {
                 const data = df.select("緯度", "経度", "路線名").toArray();
