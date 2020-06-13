@@ -106,17 +106,17 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
         updateCircleCenterAttr();
 
         const canvas = document.getElementById("main-canvas");
-        canvas.addEventListener("mousedown", function (ev) {
+        canvas.addEventListener("pointerdown", function (ev) {
             if (ev.button === 0) {
                 dragging = true;
             }
         });
-        document.addEventListener("mouseup", function (ev) {
+        document.addEventListener("pointerup", function (ev) {
             if (ev.button === 0) {
                 dragging = false;
             }
         })
-        document.addEventListener("mousemove", function (ev) {
+        document.addEventListener("pointermove", function (ev) {
             if (!(ev.buttons & 1)) {
                 dragging = false;
                 return;
