@@ -111,6 +111,9 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
 
         const canvas = document.getElementById("main-canvas");
         canvas.addEventListener("pointerdown", function (ev) {
+            if (!ev.isPrimary) {
+                return;
+            }
             if (ev.button === 0) {
                 dragging = true;
                 pointerDownX = ev.pageX;
@@ -118,6 +121,9 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
             }
         });
         document.addEventListener("pointerup", function (ev) {
+            if (!ev.isPrimary) {
+                return;
+            }
             if (ev.button === 0) {
                 dragging = false;
                 offsetX += diffX;
@@ -127,6 +133,9 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
             }
         })
         document.addEventListener("pointermove", function (ev) {
+            if (!ev.isPrimary) {
+                return;
+            }
             if (!(ev.buttons & 1)) {
                 dragging = false;
                 offsetX += diffX;
