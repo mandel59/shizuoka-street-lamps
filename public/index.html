@@ -41,18 +41,90 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
             color: Color,
             offsetLat: float,
             offsetLng: float,
-            offsetX: float,
-            offsetY: float,
+            x: float,
+            y: float,
             zoomFactor: float
     ) {
-        let y = (-(lat - offsetLat) * 500 + offsetY) * zoomFactor + 480;
+        let y = (-(lat - offsetLat) * 500 + y) * zoomFactor + 480;
         let sinlat = sin(offsetLat * 0.01745);
         let atanhsinlat = 0.5 * log((1 + sinlat) / (1 - sinlat));
-        let x = ((lng - offsetLng) * atanhsinlat * 500 + offsetX) * zoomFactor + 400;
+        let x = ((lng - offsetLng) * atanhsinlat * 500 + x) * zoomFactor + 400;
         Circle(Vector2(x, y), 0.5 * zoomFactor, color);
     }
 </script>
 <script>
+    function scroll(/** @type {HTMLElement} */ elem, /** @type {(output: { x: number, y: number, zoom: number }) => void} */ callback) {
+        var zoomLevel = 0;
+        var x = 0, y = 0;
+        var dx = 0, dy = 0;
+        var px = 0, py = 0;
+        var dragging = false;
+        const output = { x: 0, y: 0, zoom: 1 };
+
+        function update() {
+            output.x = x + dx;
+            output.y = y + dy;
+            output.zoom = Math.pow(2, zoomLevel);
+            callback(output);
+        }
+
+        elem.addEventListener("pointerdown", function (ev) {
+            if (!ev.isPrimary) {
+                return;
+            }
+            if (ev.button === 0) {
+                dragging = true;
+                px = ev.pageX;
+                py = ev.pageY;
+            }
+        });
+        document.addEventListener("pointerup", function (ev) {
+            if (!ev.isPrimary) {
+                return;
+            }
+            if (ev.button === 0) {
+                dragging = false;
+                x += dx;
+                y += dy;
+                dx = 0;
+                dy = 0;
+            }
+        })
+        document.addEventListener("pointermove", function (ev) {
+            if (!ev.isPrimary) {
+                return;
+            }
+            if (!(ev.buttons & 1)) {
+                dragging = false;
+                x += dx;
+                y += dy;
+                dx = 0;
+                dy = 0;
+                return;
+            }
+            if (dragging) {
+                const invertedZoomFactor = Math.pow(0.5, zoomLevel);
+                dx = (ev.pageX - px) * invertedZoomFactor;
+                dy = (ev.pageY - py) * invertedZoomFactor;
+                update();
+            }
+        });
+        elem.addEventListener("wheel", function (ev) {
+            ev.preventDefault();
+            if (ev.deltaY > 0) {
+                // zoom out
+                zoomLevel -= 1;
+                if (zoomLevel < 0) zoomLevel = 0;
+                update();
+            } else if (ev.deltaY < 0) {
+                // zoom in
+                zoomLevel += 1;
+                update();
+            }
+        });
+
+        update();
+    }
     function loadData() {
         const DataFrame = dfjs.DataFrame;
         const csv = location.href.replace(/\/[^/]*$/, "/datasets/静岡県-道路照明灯.csv");
@@ -72,13 +144,6 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
     function main() {
         var offsetLat = 35;
         var offsetLng = 138.5;
-        var offsetX = 0;
-        var offsetY = 0;
-        var diffX = 0;
-        var diffY = 0;
-        var pointerDownX, pointerDownY;
-        var zoomLevel = 0;
-        var dragging = false;
 
         const platform = initializePlatform();
         const circleMark = Stardust.mark.compile(document.getElementById("circle-mark").textContent).GeoCircle;
@@ -100,71 +165,20 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
             return [1, 1, 1, 0.5];
         });
 
-        function updateCircleCenterAttr() {
-            circles.attr("offsetLat", offsetLat);
-            circles.attr("offsetLng", offsetLng);
-            circles.attr("offsetX", offsetX + diffX);
-            circles.attr("offsetY", offsetY + diffY);
-            circles.attr("zoomFactor", Math.pow(2, zoomLevel));
-        }
-        updateCircleCenterAttr();
+        circles.attr("offsetLat", offsetLat);
+        circles.attr("offsetLng", offsetLng);
 
         const canvas = document.getElementById("main-canvas");
-        canvas.addEventListener("pointerdown", function (ev) {
-            if (!ev.isPrimary) {
-                return;
-            }
-            if (ev.button === 0) {
-                dragging = true;
-                pointerDownX = ev.pageX;
-                pointerDownY = ev.pageY;
-            }
-        });
-        document.addEventListener("pointerup", function (ev) {
-            if (!ev.isPrimary) {
-                return;
-            }
-            if (ev.button === 0) {
-                dragging = false;
-                offsetX += diffX;
-                offsetY += diffY;
-                diffX = 0;
-                diffY = 0;
-            }
-        })
-        document.addEventListener("pointermove", function (ev) {
-            if (!ev.isPrimary) {
-                return;
-            }
-            if (!(ev.buttons & 1)) {
-                dragging = false;
-                offsetX += diffX;
-                offsetY += diffY;
-                diffX = 0;
-                diffY = 0;
-                return;
-            }
-            if (dragging) {
-                const invertedZoomFactor = Math.pow(0.5, zoomLevel);
-                diffX = (ev.pageX - pointerDownX) * invertedZoomFactor;
-                diffY = (ev.pageY - pointerDownY) * invertedZoomFactor;
-                updateCircleCenterAttr();
-                circles.render();
-            }
-        });
-        canvas.addEventListener("wheel", function (ev) {
-            ev.preventDefault();
-            if (ev.deltaY > 0) {
-                // zoom out
-                zoomLevel -= 1;
-                if (zoomLevel < 0) zoomLevel = 0;
-                updateCircleCenterAttr();
-                circles.render();
-            } else if (ev.deltaY < 0) {
-                // zoom in
-                zoomLevel += 1;
-                updateCircleCenterAttr();
-                circles.render();
+        var requestID = 0;
+        scroll(canvas, function (output) {
+            if (requestID === 0) {
+                requestID = window.requestAnimationFrame(function () {
+                    requestID = 0;
+                    circles.attr("x", output.x);
+                    circles.attr("y", output.y);
+                    circles.attr("zoomFactor", output.zoom);
+                    circles.render();
+                });
             }
         });
 
