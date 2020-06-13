@@ -142,6 +142,11 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
                 circles.render();
             }
         });
+        document.addEventListener("wheel", function (ev) {
+            if (dragging) {
+                ev.preventDefault();
+            }
+        });
         canvas.addEventListener("wheel", function (ev) {
             ev.preventDefault();
             if (ev.deltaY > 0) {
