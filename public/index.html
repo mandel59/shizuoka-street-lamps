@@ -55,55 +55,55 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
 <script>
     function scroll(/** @type {HTMLElement} */ elem, /** @type {(output: { x: number, y: number, zoom: number }) => void} */ callback) {
         var zoomLevel = 0;
+        var pinchZoom = 1;
+        var rz = 1;
         var x = 0, y = 0;
         var dx = 0, dy = 0;
         var px = 0, py = 0;
-        var dragging = false;
+        var td = 0;
+        var draggingId = null;
         const output = { x: 0, y: 0, zoom: 1 };
+
+        function zoomFactor() {
+            return Math.pow(2, zoomLevel) * pinchZoom * rz;
+        }
 
         function update() {
             output.x = x + dx;
             output.y = y + dy;
-            output.zoom = Math.pow(2, zoomLevel);
+            output.zoom = zoomFactor();
             callback(output);
         }
 
         elem.addEventListener("pointerdown", function (ev) {
-            if (!ev.isPrimary) {
-                return;
-            }
             if (ev.button === 0) {
-                dragging = true;
+                x += dx;
+                y += dy;
+                dx = 0;
+                dy = 0;
                 px = ev.pageX;
                 py = ev.pageY;
+                draggingId = ev.pointerId;
             }
         });
         document.addEventListener("pointerup", function (ev) {
-            if (!ev.isPrimary) {
+            if (ev.pointerId !== draggingId) {
                 return;
             }
             if (ev.button === 0) {
-                dragging = false;
-                x += dx;
-                y += dy;
-                dx = 0;
-                dy = 0;
+                draggingId = null;
             }
         })
         document.addEventListener("pointermove", function (ev) {
-            if (!ev.isPrimary) {
+            if (ev.pointerId !== draggingId) {
                 return;
             }
             if (!(ev.buttons & 1)) {
-                dragging = false;
-                x += dx;
-                y += dy;
-                dx = 0;
-                dy = 0;
+                draggingId = null;
                 return;
             }
-            if (dragging) {
-                const invertedZoomFactor = Math.pow(0.5, zoomLevel);
+            if (draggingId != null) {
+                const invertedZoomFactor = 1 / zoomFactor();
                 dx = (ev.pageX - px) * invertedZoomFactor;
                 dy = (ev.pageY - py) * invertedZoomFactor;
                 update();
@@ -122,6 +122,25 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
                 update();
             }
         });
+        elem.addEventListener("touchmove", function (ev) {
+            if (ev.touches.length === 2) {
+                const primary = ev.touches[0];
+                const secondary = ev.touches[1];
+                const tdx = primary.pageX - secondary.pageX;
+                const tdy = primary.pageY - secondary.pageY;
+                const distance = Math.sqrt(tdx * tdx + tdy * tdy);
+                if (td === 0) {
+                    pinchZoom *= rz;
+                    rz = 1;
+                    td = distance;
+                } else {
+                    rz = distance / td;
+                    update();
+                }
+            } else {
+                td = 0;
+            }
+        })
 
         update();
     }
