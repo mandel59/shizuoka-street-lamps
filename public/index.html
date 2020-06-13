@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<!--
+Copyright © 2020 Ryusei Yamaguchi
+
+Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby
+granted, provided that the above copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED “AS IS” AND ISC DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL ISC BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
+USE OR PERFORMANCE OF THIS SOFTWARE.
+-->
+
+<style>
+    #main-canvas {
+        background-color: black;
+        width: 960px;
+        height: 800px;
+    }
+</style>
+
+<div>
+    <canvas id="main-canvas"></canvas>
+</div>
+
+<small lang="ja">
+    <p>データセットの出典: <a href="https://data.esrij.com/datasets/静岡県-道路照明灯">静岡県 道路照明灯 | ESRIジャパン オープンデータポータル</a>.</p>
+</small>
+
+<script src="https://gmousse.github.io/dataframe-js/dist/dataframe.js"></script>
+<script src="https://stardustjs.github.io/stardust/v0.1.1/stardust.bundle.js"></script>
+<script id="circle-mark" type="stardust-mark">
+    import { Circle } from P2D;
+    mark GeoCircle(
+            lat: float,
+            lng: float,
+            color: Color,
+            offsetLat: float,
+            offsetLng: float,
+            offsetX: float,
+            offsetY: float,
+            zoomFactor: float
+    ) {
+        let y = (-(lat - offsetLat) * 500 + offsetY) * zoomFactor + 480;
+        let sinlat = sin(offsetLat * 0.01745);
+        let atanhsinlat = 0.5 * log((1 + sinlat) / (1 - sinlat));
+        let x = ((lng - offsetLng) * atanhsinlat * 500 + offsetX) * zoomFactor + 400;
+        Circle(Vector2(x, y), 0.5 * zoomFactor, color);
+    }
+</script>
+<script>
+    function loadData() {
+        const DataFrame = dfjs.DataFrame;
+        const csv = location.href.replace(/index.html/, "datasets/静岡県-道路照明灯.csv");
+        return DataFrame.fromCSV(csv)
+            .then(function (df) {
+                const data = df.select("緯度", "経度", "路線名").toArray();
+                return data;
+            })
+    }
+    function initializePlatform() {
+        const canvas = document.getElementById("main-canvas");
+        const width = 960;
+        const height = 800;
+        const platform = Stardust.platform("webgl-2d", canvas, width, height);
+        return platform;
+    }
+    function main() {
+        var offsetLat = 35;
+        var offsetLng = 138.5;
+        var offsetX = 0;
+        var offsetY = 0;
+        var zoomLevel = 0;
+        var dragging = false;
+
+        const platform = initializePlatform();
+        const circleMark = Stardust.mark.compile(document.getElementById("circle-mark").textContent).GeoCircle;
+        const circles = Stardust.mark.create(circleMark, platform);
+
+        circles.attr("lat", function (d) { return d[0]; });
+        circles.attr("lng", function (d) { return d[1]; });
+        circles.attr("color", function (d) {
+            const route = d[2];
+            if (route.slice(0, 3) === "（国）") {
+                // 国道 → 黄
+                return [1, 0.8, 0.5, 0.5];
+            }
+            if (route.slice(0, 3) === "（県）") {
+                // 県道 → 青
+                return [0.5, 0.6, 1, 0.5];
+            }
+            // その他 → 白
+            return [1, 1, 1, 0.5];
+        });
+
+        function updateCircleCenterAttr() {
+            circles.attr("offsetLat", offsetLat);
+            circles.attr("offsetLng", offsetLng);
+            circles.attr("offsetX", offsetX);
+            circles.attr("offsetY", offsetY);
+            circles.attr("zoomFactor", Math.pow(2, zoomLevel));
+        }
+        updateCircleCenterAttr();
+
+        const canvas = document.getElementById("main-canvas");
+        canvas.addEventListener("mousedown", function (ev) {
+            if (ev.button === 0) {
+                dragging = true;
+            }
+        });
+        document.addEventListener("mouseup", function (ev) {
+            if (ev.button === 0) {
+                dragging = false;
+            }
+        })
+        document.addEventListener("mousemove", function (ev) {
+            if (!(ev.buttons & 1)) {
+                dragging = false;
+                return;
+            }
+            if (dragging) {
+                const invertedZoomFactor = Math.pow(0.5, zoomLevel);
+                offsetX += ev.movementX * invertedZoomFactor;
+                offsetY += ev.movementY * invertedZoomFactor;
+                updateCircleCenterAttr();
+                circles.render();
+            }
+        });
+        canvas.addEventListener("wheel", function (ev) {
+            ev.preventDefault();
+            if (ev.deltaY > 0) {
+                // zoom out
+                zoomLevel -= 1;
+                if (zoomLevel < 0) zoomLevel = 0;
+                updateCircleCenterAttr();
+                circles.render();
+            } else if (ev.deltaY < 0) {
+                // zoom in
+                zoomLevel += 1;
+                updateCircleCenterAttr();
+                circles.render();
+            }
+        });
+
+        loadData().then(function (data) {
+            circles.data(data);
+            circles.render();
+        });
+    }
+    window.addEventListener("load", main);
+</script>
