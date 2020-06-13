@@ -141,6 +141,11 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
                 td = 0;
             }
         })
+        elem.addEventListener("touchend", function (ev) {
+            if (ev.touches.length !== 2) {
+                td = 0;
+            }
+        })
 
         update();
     }
