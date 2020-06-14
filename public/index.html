@@ -210,17 +210,22 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
         circles.attr("offsetLng", offsetLng);
 
         const canvas = document.getElementById("main-canvas");
+
         var requestID = 0;
-        scroll(canvas, function (output) {
+        function requestRender() {
             if (requestID === 0) {
                 requestID = window.requestAnimationFrame(function () {
                     requestID = 0;
-                    circles.attr("x", output.x);
-                    circles.attr("y", output.y);
-                    circles.attr("zoomFactor", output.zoom);
                     circles.render();
                 });
             }
+        }
+
+        scroll(canvas, function (output) {
+            circles.attr("x", output.x);
+            circles.attr("y", output.y);
+            circles.attr("zoomFactor", output.zoom);
+            requestRender();
         });
 
         loadData().then(function (data) {
