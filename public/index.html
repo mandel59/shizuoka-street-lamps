@@ -145,6 +145,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
                     td = distance;
                 } else {
                     rz = distance / td;
+                    if (pinchZoom * rz < 1) rz = 1 / pinchZoom;
                     update();
                 }
             } else {
