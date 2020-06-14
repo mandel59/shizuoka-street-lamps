@@ -35,6 +35,16 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
 <script src="https://stardustjs.github.io/stardust/v0.1.1/stardust.bundle.js"></script>
 <script id="circle-mark" type="stardust-mark">
     import { Circle } from P2D;
+
+    function degToRad(phi: float) {
+        return phi * 0.01745329251;
+    }
+
+    function lambertDegree(phi: float) {
+        let sinPhi = sin(degToRad(phi));
+        return 0.5 * log((1 + sinPhi) / (1 - sinPhi));
+    }
+
     mark GeoCircle(
             lat: float,
             lng: float,
@@ -45,10 +55,10 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
             y: float,
             zoomFactor: float
     ) {
-        let y = (-(lat - offsetLat) * 500 + y) * zoomFactor + 480;
-        let sinlat = sin(offsetLat * 0.01745);
-        let atanhsinlat = 0.5 * log((1 + sinlat) / (1 - sinlat));
-        let x = ((lng - offsetLng) * atanhsinlat * 500 + x) * zoomFactor + 400;
+        let lamOffsetLat = lambertDegree(offsetLat);
+        let lamLat = lambertDegree(lat);
+        let y = (-(lamLat - lamOffsetLat) * 20000 + y) * zoomFactor + 480;
+        let x = (degToRad(lng - offsetLng) * 20000 + x) * zoomFactor + 400;
         Circle(Vector2(x, y), 0.5 * zoomFactor, color);
     }
 </script>
