@@ -70,8 +70,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
 </script>
 <script>
     function scroll(/** @type {HTMLElement} */ elem, /** @type {(output: { x: number, y: number, zoom: number }) => void} */ callback) {
-        var zoomLevel = 0;
-        var pinchZoom = 1;
+        var zoom = 1;
         var rz = 1;
         var x = 0, y = 0;
         var dx = 0, dy = 0;
@@ -81,7 +80,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
         const output = { x: 0, y: 0, zoom: 1 };
 
         function zoomFactor() {
-            return Math.pow(2, zoomLevel) * pinchZoom * rz;
+            return zoom * rz;
         }
 
         function update() {
@@ -129,12 +128,12 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
             ev.preventDefault();
             if (ev.deltaY > 0) {
                 // zoom out
-                zoomLevel -= 1;
-                if (zoomLevel < 0) zoomLevel = 0;
+                zoom /= 2;
+                if (zoom * rz < 1) zoom = 1 / rz;
                 update();
             } else if (ev.deltaY < 0) {
                 // zoom in
-                zoomLevel += 1;
+                zoom *= 2;
                 update();
             }
         });
@@ -146,12 +145,12 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
                 const tdy = primary.pageY - secondary.pageY;
                 const distance = Math.sqrt(tdx * tdx + tdy * tdy);
                 if (td === 0) {
-                    pinchZoom *= rz;
+                    zoom *= rz;
                     rz = 1;
                     td = distance;
                 } else {
                     rz = distance / td;
-                    if (pinchZoom * rz < 1) rz = 1 / pinchZoom;
+                    if (zoom * rz < 1) rz = 1 / zoom;
                     update();
                 }
             } else {
