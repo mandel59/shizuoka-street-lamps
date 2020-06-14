@@ -55,10 +55,16 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
             y: float,
             zoomFactor: float
     ) {
+        // equatorial radius
+        let a = 6378137;
+        // meter to pixel
+        let mToPx = 96 / 0.0254;
+        // 1:1,000,000
+        let scale = a * mToPx / 1000000;
         let lamOffsetLat = lambertDegree(offsetLat);
         let lamLat = lambertDegree(lat);
-        let y = (-(lamLat - lamOffsetLat) * 20000 + y) * zoomFactor + 480;
-        let x = (degToRad(lng - offsetLng) * 20000 + x) * zoomFactor + 400;
+        let y = (-(lamLat - lamOffsetLat) * scale + y) * zoomFactor + 480;
+        let x = (degToRad(lng - offsetLng) * scale + x) * zoomFactor + 400;
         Circle(Vector2(x, y), 0.5 * zoomFactor, color);
     }
 </script>
@@ -177,8 +183,8 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
         return platform;
     }
     function main() {
-        var offsetLat = 35;
-        var offsetLng = 138.5;
+        var offsetLat = 35.07;
+        var offsetLng = 138.2;
 
         const platform = initializePlatform();
         const circleMark = Stardust.mark.compile(document.getElementById("circle-mark").textContent).GeoCircle;
