@@ -126,16 +126,13 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
         });
         elem.addEventListener("wheel", function (ev) {
             ev.preventDefault();
-            if (ev.deltaY > 0) {
-                // zoom out
-                zoom /= 2;
-                if (zoom * rz < 1) zoom = 1 / rz;
-                update();
-            } else if (ev.deltaY < 0) {
-                // zoom in
-                zoom *= 2;
-                update();
+            if (ev.deltaMode === ev.DOM_DELTA_LINE) {
+                zoom *= Math.pow(2, -ev.deltaY / 3);
+            } else if (ev.deltaMode === ev.DOM_DELTA_PIXEL) {
+                zoom *= Math.pow(2, -ev.deltaY / 25);
             }
+            if (zoom * rz < 1) zoom = 1 / rz;
+            update();
         });
         elem.addEventListener("touchmove", function (ev) {
             if (ev.touches.length === 2) {
