@@ -60,7 +60,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
         // meter to pixel
         let mToPx = 96 / 0.0254;
         // 1:1,000,000
-        let scale = a * mToPx / 1000000;
+        let scale = cos(degToRad(offsetLat)) * a * mToPx / 1000000;
         let lamOffsetLat = lambertDegree(offsetLat);
         let lamLat = lambertDegree(lat);
         let y = (-(lamLat - lamOffsetLat) * scale + y) * zoomFactor + 480;
