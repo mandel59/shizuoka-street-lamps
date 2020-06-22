@@ -129,7 +129,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
             if (ev.deltaMode === ev.DOM_DELTA_LINE) {
                 zoom *= Math.pow(2, -ev.deltaY / 3);
             } else if (ev.deltaMode === ev.DOM_DELTA_PIXEL) {
-                zoom *= Math.pow(2, -ev.deltaY / 25);
+                zoom *= Math.pow(2, -ev.deltaY / 100);
             }
             if (zoom * rz < 1) zoom = 1 / rz;
             update();
